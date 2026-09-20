@@ -1,12 +1,15 @@
 import worker from '../src/index.js';
 
 export async function onRequest(context) {
-  // 1. 获取原始请求 URL
-  const url = new URL(context.request.url);
+  // 1. 获取上下文中的 request 和 env
+  const { request, env } = context;
 
-  // 2. 重新构建 Request 对象，确保 url 和 headers 完整传递
-  const request = new Request(url.toString(), context.request);
+  // 2. 构造符合原 Worker 要求的 executionContext
+  const ctx = {
+    waitUntil: (promise) => context.waitUntil(promise),
+    passThroughOnException: () => context.passThroughOnException(),
+  };
 
-  // 3. 将 request、env 和 context 一并传给原本的 worker
-  return worker.fetch(request, context.env, context);
+  // 3. 将包含 formData 和完整 Method 的请求直接透传给 Worker
+  return worker.fetch(request, env, ctx);
 }
